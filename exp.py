@@ -3,7 +3,7 @@ import torch.nn.functional as F
 import numpy as np
 import copy
 import os
-import wandb
+#import wandb
 from model import THOC
 
 from tqdm import tqdm
@@ -27,7 +27,7 @@ class THOCTrainer:
         self.optimizer = torch.optim.AdamW(params=self.model.parameters(), lr=self.args.lr, weight_decay=self.args.L2_reg)
 
     def train(self):
-        wandb.watch(self.model, log="all", log_freq=100)
+        #wandb.watch(self.model, log="all", log_freq=100)
 
         train_iterator = tqdm(
             range(1, self.args.epochs + 1),
@@ -51,12 +51,13 @@ class THOCTrainer:
     def train_epoch(self):
         self.model.train()
         log_freq = len(self.train_loader) // self.args.log_freq
+        print(log_freq)
         train_summary = 0.0
         for i, batch_data in enumerate(self.train_loader):
             train_log = self._process_batch(batch_data)
             if (i + 1) % log_freq == 0:
                 self.logger.info(f"{train_log}")
-                wandb.log(train_log)
+                #wandb.log(train_log)
             train_summary += train_log["summary"]
         train_summary /= len(self.train_loader)
         return train_summary
@@ -96,7 +97,7 @@ class THOCTrainer:
         logit = 1 / (1 + np.exp(-s))  # (N, )
         pred_prob = np.zeros((len(logit), 2))
         pred_prob[:, 0], pred_prob[:, 1] = 1 - logit, logit
-        wandb.sklearn.plot_roc(gt, pred_prob)
+        #wandb.sklearn.plot_roc(gt, pred_prob)
         auc = roc_auc_score(gt, anomaly_scores)
         result.update({"AUC": auc})
 
@@ -113,7 +114,7 @@ class THOCTrainer:
             "Recall": r,
             "F1": f1,
         })
-        wandb.sklearn.plot_confusion_matrix(gt, pred, labels=["normal", "abnormal"])
+        #wandb.sklearn.plot_confusion_matrix(gt, pred, labels=["normal", "abnormal"])
 
         # F1-PA
         pa_pred = PA(gt, pred)
@@ -127,7 +128,7 @@ class THOCTrainer:
             "Recall (PA)": r,
             "F1 (PA)": f1,
         })
-        wandb.sklearn.plot_confusion_matrix(gt, pa_pred, labels=["normal", "abnormal"])
+        #wandb.sklearn.plot_confusion_matrix(gt, pa_pred, labels=["normal", "abnormal"])
         return result
 
     def calculate_anomaly_scores(self):

@@ -12,14 +12,15 @@ class THOC(nn.Module):
         self.tau = 1
         self.DRNN = DRNN(n_input=C, n_hidden=n_hidden, n_layers=self.L, device=device)
 
+        # Learnable parameters
         self.clusters = nn.ParameterList([
             nn.Parameter(torch.zeros(n_hidden, K_l))
             for K_l in range(self.L*2, 0, -2)
         ])
         for c in self.clusters:
-            nn.init.xavier_uniform_(c)
+            nn.init.xavier_uniform_(c) # Cluster center initialization 
 
-
+        # Fully connected layers for cluster mapping
         self.cnets = nn.ModuleList([
             nn.Sequential(
                 nn.Linear(n_hidden, n_hidden),
@@ -27,6 +28,7 @@ class THOC(nn.Module):
             ) for _ in range(self.L) # nn that maps f_bar to f_hat
         ])
 
+        # MLP to produce a final hidden representation and takes in input the outputs of previous layers
         self.MLP = nn.Sequential(
             nn.Linear(n_hidden*2, n_hidden*2),
             nn.ReLU(),
@@ -34,14 +36,17 @@ class THOC(nn.Module):
             nn.ReLU(),
             nn.Linear(n_hidden, n_hidden)
         )
-
+        # Temporal Self Supervision Networks: list of networke, one for each layer, that predict the original
+        # input from the hidden states at each time step. It helps the model learn temporal dipendencies.
+        # Each network maps the hidden state back to the input dimension (C) and allows the model to predict
+        # the input sequence from its learned hidden representation
         self.TSSnets = nn.ModuleList([
             nn.Linear(n_hidden, C) for _ in range(self.L)
         ])
 
     def forward(self, X):
         '''
-        :param X: (B, W, C)
+        :param X: (B: batch size, W: window size, C: number of channels) (B: batch size, )
         :return: Losses,
         '''
         B, W, C = X.shape
@@ -50,7 +55,7 @@ class THOC(nn.Module):
         # THOC
         L_THOC = 0
         anomaly_scores = torch.zeros(B, device=self.device)
-        f_t_bar = MTF_output[0][:, -1, :].unsqueeze(1)
+        f_t_bar = MTF_output[0][:, -1, :].unsqueeze(1) # the final hidden state of DRNN is used as starting point for clustering
         Ps, Rs = [], []
 
         for i, cluster in enumerate(self.clusters):

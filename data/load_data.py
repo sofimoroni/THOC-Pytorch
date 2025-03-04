@@ -20,12 +20,14 @@ class DataFactory:
             "SWaT": self.load_SWaT,
             "SMAP": self.load_SMAP,
             "MSL": self.load_MSL,
+            "MY_DATA": self.load_LVDT20,
         }
         self.datasets = {
             "NeurIPS-TS-MUL": TSADStandardDataset,
             "SWaT": TSADStandardDataset,
             "SMAP": TSADStandardDataset,
             "MSL": TSADStandardDataset,
+            "MY_DATA": TSADStandardDataset,
         }
 
         self.transforms = {
@@ -120,6 +122,20 @@ class DataFactory:
         normal = pd.read_csv(os.path.join(home_dir, base_dir, "nts_mul_normal.csv"))
         abnormal = pd.read_csv(os.path.join(home_dir, base_dir, "nts_mul_abnormal.csv"))
 
+        train_X, train_y = normal.values[:, :-1], normal.values[:, -1]
+        test_X, test_y = abnormal.values[:, :-1], abnormal.values[:, -1]
+
+        train_X, test_X = train_X.astype(np.float32), test_X.astype(np.float32)
+        train_y, test_y = train_y.astype(int), test_y.astype(int)
+
+        return train_X, train_y, test_X, test_y
+
+    @staticmethod
+    def load_LVDT20(home_dir = "."):
+        base_dir = "data/LVDT_20"
+        normal = pd.read_csv(os.path.join(home_dir, base_dir, "train_data.csv"))
+        abnormal = pd.read_csv(os.path.join(home_dir, base_dir, "test_data_20%.csv"))
+        
         train_X, train_y = normal.values[:, :-1], normal.values[:, -1]
         test_X, test_y = abnormal.values[:, :-1], abnormal.values[:, -1]
 
